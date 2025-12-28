@@ -3,6 +3,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
+import { config } from "@/lib/config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,8 +47,13 @@ export async function POST(request: NextRequest) {
       success: true,
       requestId: result.lastInsertRowid,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create request error:", error)
+    // In debug mode expose error details to aid development; otherwise return a generic message
+    if (config.debug) {
+      return NextResponse.json({ error: "Internal server error", detail: error?.message || String(error) }, { status: 500 })
+    }
+
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -51,12 +51,19 @@ export default function RegisterPage() {
     }
 
     try {
+      // Normalize phone (remove spaces) and trim email before sending
+      const payload = {
+        ...formData,
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone ? formData.phone.replace(/\s+/g, "") : formData.phone,
+      }
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          ...payload,
           role,
           helperData:
             role === "helper"
@@ -87,7 +94,7 @@ export default function RegisterPage() {
         toast({
           variant: "destructive",
           title: "Registration failed",
-          description: data.error || "An error occurred",
+          description: data.error || data.detail || "An error occurred",
         })
       }
     } catch (error) {

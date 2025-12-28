@@ -46,7 +46,7 @@ export default function RequestDetailPage() {
 
   useEffect(() => {
     // Check authentication
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (!data.user) {
@@ -91,6 +91,7 @@ export default function RequestDetailPage() {
     try {
       const response = await fetch(`/api/requests/${params.id}/select-helper`, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ helper_id: helperId }),
       })
@@ -122,6 +123,7 @@ export default function RequestDetailPage() {
     try {
       const response = await fetch(`/api/requests/${params.id}/complete`, {
         method: "PUT",
+        credentials: "include",
       })
 
       if (response.ok) {
@@ -136,6 +138,36 @@ export default function RequestDetailPage() {
         variant: "destructive",
         title: "Error",
         description: "Failed to complete request",
+      })
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    try {
+      const response = await fetch(`/api/requests/${params.id}/cancel`, {
+        method: "PUT",
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Request cancelled",
+          description: "Your service request has been cancelled",
+        })
+        loadData()
+      } else {
+        const data = await response.json()
+        toast({
+          variant: "destructive",
+          title: "Failed to cancel request",
+          description: data?.error || data?.detail || "Unable to cancel request",
+        })
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: (error as any)?.message || "Failed to cancel request",
       })
     }
   }
@@ -198,6 +230,13 @@ export default function RequestDetailPage() {
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Mark as Completed
                 </Button>
+              )}
+              {request.status === "pending" && (
+                <div className="pt-2">
+                  <Button variant="destructive" onClick={handleCancelRequest} className="w-full">
+                    Cancel Request
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

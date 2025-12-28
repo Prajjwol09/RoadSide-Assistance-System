@@ -4,19 +4,26 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { createSession } from "@/lib/auth"
+import { config } from "@/lib/config"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, phone, password, name, role, helperData } = body
+    console.log('Register attempt:', { body: { ...body, password: body.password ? '*****' : undefined } })
+    let { email, phone, password, name, role, helperData } = body
+    // Normalize inputs
+    email = String(email).trim().toLowerCase()
+    phone = phone ? String(phone).replace(/\s+/g, "") : ""
 
     // Validate input
     if (!email || !phone || !password || !name || !role) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
-    // Check if user already exists
-    const existingUser = db.prepare("SELECT id FROM users WHERE email = ? OR phone = ?").get(email, phone)
+    // Check if user already exists (compare normalized phone to avoid formatting collisions)
+    const existingUser = db
+      .prepare("SELECT id FROM users WHERE email = ? OR replace(phone, ' ', '') = ?")
+      .get(email, phone)
 
     if (existingUser) {
       return NextResponse.json({ error: "User with this email or phone already exists" }, { status: 409 })
@@ -24,11 +31,27 @@ export async function POST(request: NextRequest) {
 
     // Insert new user
     // In production, hash the password using bcrypt or similar
-    const result = db
-      .prepare("INSERT INTO users (email, phone, password, name, role) VALUES (?, ?, ?, ?, ?)")
-      .run(email, phone, password, name, role)
+    let result
+    try {
+      result = db.prepare("INSERT INTO users (email, phone, password, name, role) VALUES (?, ?, ?, ?, ?)").run(
+        email,
+        phone,
+        password,
+        name,
+        role,
+      )
+    } catch (err: any) {
+      console.error('User insert error:', err)
+      // Handle unique constraint errors gracefully
+      const message = err?.message || ''
+      if (/UNIQUE constraint failed/i.test(message) || err?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        return NextResponse.json({ error: 'User with this email or phone already exists' }, { status: 409 })
+      }
+      if (config.debug) return NextResponse.json({ error: 'Internal server error', detail: message }, { status: 500 })
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
 
-    const userId = result.lastInsertRowid as number
+    const userId = Number(result.lastInsertRowid)
 
     // If registering as a helper, create helper profile
     if (role === "helper" && helperData) {
@@ -38,13 +61,19 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Helper profile requires skills and address" }, { status: 400 })
       }
 
-      db.prepare("INSERT INTO helpers (user_id, skills, address, latitude, longitude) VALUES (?, ?, ?, ?, ?)").run(
-        userId,
-        skills,
-        address,
-        latitude || null,
-        longitude || null,
-      )
+      try {
+        db
+          .prepare("INSERT INTO helpers (user_id, skills, address, latitude, longitude) VALUES (?, ?, ?, ?, ?)")
+          .run(userId, skills, address, latitude || null, longitude || null)
+      } catch (err: any) {
+        console.error('Helper insert error:', err)
+        const message = err?.message || ''
+        if (/UNIQUE constraint failed/i.test(message) || err?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+          return NextResponse.json({ error: 'Helper profile already exists for this user' }, { status: 409 })
+        }
+        if (config.debug) return NextResponse.json({ error: 'Internal server error', detail: message }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      }
     }
 
     // Create session for new user

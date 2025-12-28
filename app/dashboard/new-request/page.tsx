@@ -26,6 +26,8 @@ export default function NewRequestPage() {
     longitude: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [hasActiveRequest, setHasActiveRequest] = useState(false)
+  const [activeRequest, setActiveRequest] = useState<any | null>(null)
 
   useEffect(() => {
     // Check authentication
@@ -36,6 +38,21 @@ export default function NewRequestPage() {
           router.push("/login")
         } else {
           setUser(data.user)
+          // After we have the user, check for active requests and block creation if present
+          fetch("/api/requests/my-requests", { credentials: "include" })
+            .then((r) => r.json())
+            .then((listData) => {
+              if (Array.isArray(listData.requests)) {
+                const active = listData.requests.find((req: any) => !["completed", "cancelled"].includes(req.status))
+                if (active) {
+                  setHasActiveRequest(true)
+                  setActiveRequest(active)
+                }
+              }
+            })
+            .catch(() => {
+              // ignore silently — we'll still allow creation but server has final authority
+            })
         }
       })
       .catch(() => router.push("/login"))
@@ -74,6 +91,14 @@ export default function NewRequestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (hasActiveRequest) {
+      toast({
+        variant: "destructive",
+        title: "Active request exists",
+        description: `You already have an active request (status: ${activeRequest?.status}). Please complete or cancel it before creating a new one.`,
+      })
+      return
+    }
     setIsLoading(true)
 
     // Validate coordinates
@@ -114,14 +139,14 @@ export default function NewRequestPage() {
         toast({
           variant: "destructive",
           title: "Failed to create request",
-          description: data.error || "An error occurred",
+          description: data.error || data.detail || "An error occurred",
         })
       }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An unexpected error occurred",
+        description: (error as any)?.message || "An unexpected error occurred",
       })
     } finally {
       setIsLoading(false)
@@ -141,6 +166,19 @@ export default function NewRequestPage() {
       <Navbar user={user} />
       <main className="container py-6">
         <div className="max-w-2xl mx-auto">
+          {hasActiveRequest && (
+            <div className="mb-4">
+              <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4">
+                <p className="font-medium">You have an active service request</p>
+                <p className="text-sm text-muted-foreground">
+                  Current status: <strong className="capitalize">{activeRequest?.status}</strong>. 
+                  <a href={`/dashboard/request/${activeRequest?.id}`} className="underline ml-1">
+                    View request
+                  </a>
+                </p>
+              </div>
+            </div>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Create Service Request</CardTitle>
@@ -199,8 +237,8 @@ export default function NewRequestPage() {
                   <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isLoading} className="flex-1">
-                    {isLoading ? "Creating..." : "Create Request"}
+                  <Button type="submit" disabled={isLoading || hasActiveRequest} className="flex-1">
+                    {hasActiveRequest ? "Active request exists" : isLoading ? "Creating..." : "Create Request"}
                   </Button>
                 </div>
               </CardContent>
