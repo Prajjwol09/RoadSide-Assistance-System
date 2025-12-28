@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password } = body
 
+    console.log("Login attempt:", { email })
+
     // Validate input
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
@@ -18,6 +20,7 @@ export async function POST(request: NextRequest) {
     // Find user by email
     // In production, use proper password hashing (bcrypt, argon2, etc.)
     const user = db.prepare("SELECT * FROM users WHERE email = ? AND password = ?").get(email, password) as any
+    console.log("Login lookup result:", user ? { id: user.id, email: user.email, role: user.role } : null)
 
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })

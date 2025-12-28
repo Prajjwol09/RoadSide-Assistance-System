@@ -29,7 +29,7 @@ export default function NewRequestPage() {
 
   useEffect(() => {
     // Check authentication
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (!data.user) {
@@ -93,6 +93,7 @@ export default function NewRequestPage() {
     try {
       const response = await fetch("/api/requests/create", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           issue_description: formData.issue_description,

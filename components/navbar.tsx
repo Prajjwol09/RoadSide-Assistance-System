@@ -23,7 +23,7 @@ export function Navbar({ user }: NavbarProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
       toast({
         title: "Logged out",
         description: "You have been successfully logged out",

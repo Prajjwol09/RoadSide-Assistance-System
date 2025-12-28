@@ -10,6 +10,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { issue_description, latitude, longitude } = body
 
+    // Debug: log session and incoming payload to help diagnose FK errors
+    console.log("Create request: session=", session)
+    console.log("Create request: payload=", { issue_description, latitude, longitude })
+
+    // Ensure the session user actually exists in the users table (avoid FK failure)
+    const userExists = db.prepare("SELECT id FROM users WHERE id = ?").get(session.id)
+    if (!userExists) {
+      console.error(`Create request error: session user id=${session.id} not found in users table`)
+      return NextResponse.json({ error: "Invalid session user" }, { status: 401 })
+    }
+
     // Validate input
     if (!issue_description || !latitude || !longitude) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
@@ -29,7 +40,7 @@ export async function POST(request: NextRequest) {
       .prepare(
         "INSERT INTO service_requests (user_id, issue_description, latitude, longitude, status) VALUES (?, ?, ?, ?, 'requested')",
       )
-      .run(session.id, issue_description, latitude, longitude)
+      .run(session.id, issue_description, Number(latitude), Number(longitude))
 
     return NextResponse.json({
       success: true,

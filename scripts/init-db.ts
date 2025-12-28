@@ -22,8 +22,28 @@ if (fs.existsSync(fullPath)) {
     fs.unlinkSync(fullPath)
     console.log(`✓ Removed existing database file: ${fullPath}`)
   } catch (err) {
-    console.error(`❌ Failed to remove existing database file: ${err}`)
-    process.exit(1)
+    const e = err as NodeJS.ErrnoException
+    console.warn(`⚠️ Failed to remove existing database file: ${e}`)
+    console.warn("Attempting to reset the existing database in-place (dropping all tables). If this fails, stop the dev server and retry.")
+
+    try {
+      const dbExisting = new Database(fullPath)
+      dbExisting.pragma("foreign_keys = OFF")
+      const rows: Array<{ name: string }> = dbExisting
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+        .all()
+
+      for (const r of rows) {
+        dbExisting.exec(`DROP TABLE IF EXISTS ${r.name}`)
+      }
+
+      dbExisting.close()
+      console.log("✓ Dropped existing tables in-place")
+    } catch (err2) {
+      console.error(`❌ Failed to reset existing database: ${err2}`)
+      console.error("Please stop any process using the database (e.g., the dev server) and re-run `npm run db:init`.")
+      process.exit(1)
+    }
   }
 }
 

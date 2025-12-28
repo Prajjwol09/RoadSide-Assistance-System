@@ -3,6 +3,7 @@
 
 import { cookies } from "next/headers"
 import { config } from "./config"
+import db from "./db"
 
 // Session data structure
 export interface SessionUser {
@@ -37,7 +38,28 @@ export async function getSession(): Promise<SessionUser | null> {
   }
 
   try {
-    return JSON.parse(sessionCookie.value)
+    const parsed = JSON.parse(sessionCookie.value) as SessionUser
+
+    // Validate that the user still exists in the database (prevents stale sessions after DB reset)
+    try {
+      const user = db.prepare("SELECT id, email, name, role FROM users WHERE id = ?").get(parsed.id) as any
+      if (!user) {
+        // Clear cookie
+        cookieStore.delete("session")
+        return null
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }
+    } catch (err) {
+      // If DB access fails, treat as no session
+      cookieStore.delete("session")
+      return null
+    }
   } catch {
     return null
   }

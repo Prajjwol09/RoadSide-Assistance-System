@@ -26,7 +26,7 @@ INSERT INTO service_requests (user_id, helper_id, issue_description, latitude, l
   (1, 1, 'Flat tire on highway near exit 42. Need urgent help!', 40.7128, -74.0060, 'completed', datetime('now', '-2 days')),
   (4, 2, 'Car won''t start, battery seems dead. Location: parking lot', 40.7580, -73.9855, 'completed', datetime('now', '-1 day')),
   (7, 1, 'Ran out of gas on Route 9. Need fuel delivery.', 40.7489, -73.9680, 'completed', datetime('now', '-5 hours')),
-  (1, NULL, 'Strange noise from engine. Need diagnostic.', 40.7614, -73.9776, 'requested', NULL),
+  -- Removed an active 'requested' entry for user 1 to allow creating new requests in dev/testing
   (4, 3, 'Locked keys inside car. Need lockout service.', 40.7400, -73.9900, 'accepted', NULL);
 
 -- Insert sample ratings (mutual ratings for completed services)
