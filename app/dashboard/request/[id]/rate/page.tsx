@@ -55,12 +55,17 @@ export default function RateHelperPage() {
       const requestRes = await fetch(`/api/requests/${params.id}`)
       const requestData = await requestRes.json()
       if (requestRes.ok) {
+        const req = requestData.request
+        // support nested helper object
+        const helper_user_id = req.helper_user_id || (req.helper && req.helper.id)
+        const helper_name = req.helper_name || (req.helper && req.helper.name)
+
         setRequest({
-          id: requestData.request.id,
-          helper_id: requestData.request.helper_id,
-          helper_user_id: requestData.request.helper_user_id,
-          helper_name: requestData.request.helper_name,
-          status: requestData.request.status,
+          id: req.id,
+          helper_id: req.helper_id,
+          helper_user_id: helper_user_id,
+          helper_name: helper_name,
+          status: req.status,
         })
 
         // Check if already rated

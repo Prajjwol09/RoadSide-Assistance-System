@@ -30,7 +30,7 @@ export default function LoginPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: String(email).trim().toLowerCase(), password }),
       })
 
       const data = await response.json()
@@ -55,6 +55,11 @@ export default function LoginPage() {
           title: "Login failed",
           description: data.error || "Invalid credentials",
         })
+
+        // If server returned hints in debug mode, show as console info
+        if (data?.hints) {
+          console.info("Auth hints:", data.hints)
+        }
       }
     } catch (error) {
       toast({

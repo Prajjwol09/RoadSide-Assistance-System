@@ -19,6 +19,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Update request with selected helper and change status to pending
+    // Prevent re-selecting the same helper if they previously declined
+    const prevDeclined = db
+      .prepare(
+        "SELECT id FROM service_request_helper_responses WHERE service_request_id = ? AND helper_id = ? AND response = 'declined'",
+      )
+      .get(id, helper_id)
+
+    if (prevDeclined) {
+      return NextResponse.json({ error: "This helper previously declined this request and cannot be re-selected" }, { status: 400 })
+    }
+
     db.prepare(
       "UPDATE service_requests SET helper_id = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     ).run(helper_id, id)

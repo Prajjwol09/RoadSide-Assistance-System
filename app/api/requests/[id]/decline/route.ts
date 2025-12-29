@@ -1,5 +1,4 @@
-// Accept service request (Helper action)
-// Also automatically sets helper availability to unavailable
+// Decline service request (Helper action)
 
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
@@ -17,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Helper profile not found" }, { status: 404 })
     }
 
-    // Verify the request is assigned to this helper and still pending
+    // Verify the request is assigned to this helper
     const serviceRequest = db
       .prepare("SELECT * FROM service_requests WHERE id = ? AND helper_id = ?")
       .get(id, helper.id) as any
@@ -26,37 +25,31 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Request not found or not assigned to you" }, { status: 404 })
     }
 
-    // Only allow accept when status is 'pending'
+    // Only allow decline when status is 'pending'
     if (serviceRequest.status !== "pending") {
       return NextResponse.json({ error: "Request is not pending or already responded" }, { status: 400 })
     }
 
-    // Prevent accept if this helper previously declined
-    const prev = db
-      .prepare("SELECT id FROM service_request_helper_responses WHERE service_request_id = ? AND helper_id = ? AND response = 'declined'")
-      .get(id, helper.id)
-    if (prev) {
-      return NextResponse.json({ error: "You previously declined this request and cannot accept it" }, { status: 400 })
-    }
+    // Re-open the request so the user can select another helper
+    // Clear the assigned helper and set status back to 'requested'
+    db.prepare(
+      "UPDATE service_requests SET helper_id = NULL, status = 'requested', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    ).run(id)
 
-    // Update request status to accepted
-    db.prepare("UPDATE service_requests SET status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id)
-
-    // Record helper acceptance
+    // Record helper response so they can't be re-assigned or re-accept later
     try {
       db.prepare(
-        "INSERT OR REPLACE INTO service_request_helper_responses (service_request_id, helper_id, response) VALUES (?, ?, 'accepted')",
+        "INSERT OR REPLACE INTO service_request_helper_responses (service_request_id, helper_id, response) VALUES (?, ?, 'declined')",
       ).run(id, helper.id)
     } catch (e) {
-      console.warn("Failed to record helper acceptance", e)
+      console.warn("Failed to record helper response", e)
     }
 
-    // Automatically set helper availability to unavailable
-    db.prepare("UPDATE helpers SET is_available = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(helper.id)
+    // Do not change helper availability; they remain available
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Accept request error:", error)
+    console.error("Decline request error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

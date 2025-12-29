@@ -3,14 +3,16 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
 import { useRouter, useParams } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { MapPin, Clock, User, CheckCircle } from "lucide-react"
+import { MapPin, Clock, User, CheckCircle, Star } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Request {
@@ -30,7 +32,14 @@ export default function HelperRequestDetailPage() {
   const { toast } = useToast()
   const [user, setUser] = useState<any>(null)
   const [request, setRequest] = useState<Request | null>(null)
+  const [images, setImages] = useState<any[]>([])
+  const [ratings, setRatings] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const mapRef = useRef<HTMLDivElement | null>(null)
+  const leafletMapRef = useRef<any>(null)
+  const userMarkerRef = useRef<any>(null)
+  const helperMarkerRef = useRef<any>(null)
+  const [distanceKm, setDistanceKm] = useState<number | null>(null)
 
   useEffect(() => {
     // Check authentication
@@ -53,6 +62,18 @@ export default function HelperRequestDetailPage() {
       const data = await response.json()
       if (response.ok) {
         setRequest(data.request)
+        setImages(data.images || [])
+
+        // If completed, load ratings/reviews for this request
+        if (data.request.status === "completed") {
+          try {
+            const rRes = await fetch(`/api/ratings/service-request/${params.id}`)
+            const rData = await rRes.json()
+            if (rRes.ok) setRatings(rData.ratings || [])
+          } catch (e) {
+            // ignore ratings fetch errors
+          }
+        }
       }
     } catch (error) {
       toast({
@@ -77,6 +98,8 @@ export default function HelperRequestDetailPage() {
           description: "You are now assigned to this request",
         })
         loadData()
+        // start sending location updates
+        startSendingLocation()
       } else {
         const data = await response.json()
         toast({
@@ -92,6 +115,85 @@ export default function HelperRequestDetailPage() {
         description: "An unexpected error occurred",
       })
     }
+  }
+
+  const startSendingLocation = () => {
+    // initial send
+    sendHelperLocation()
+    // send periodically
+    setInterval(() => {
+      sendHelperLocation()
+    }, 5000)
+    // also init map polling
+    setTimeout(() => initMap(), 200)
+  }
+
+  const sendHelperLocation = () => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          await fetch("/api/helpers/location", {
+            method: "PUT",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+          })
+        } catch (e) {
+          // ignore
+        }
+      },
+      () => {},
+      { enableHighAccuracy: true }
+    )
+  }
+
+  const initMap = () => {
+    if (!mapRef.current || !request) return
+    if (leafletMapRef.current) return
+
+    const map = L.map(mapRef.current).setView([request.latitude, request.longitude], 13)
+    leafletMapRef.current = map
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    }).addTo(map)
+
+    userMarkerRef.current = L.marker([request.latitude, request.longitude]).addTo(map).bindPopup("User location")
+    fetchLocationsAndUpdateMarkers()
+    setInterval(() => fetchLocationsAndUpdateMarkers(), 5000)
+  }
+
+  const fetchLocationsAndUpdateMarkers = async () => {
+    if (!request) return
+    try {
+      const res = await fetch(`/api/requests/${request.id}/locations`, { credentials: "include" })
+      const data = await res.json()
+      if (!res.ok) return
+      if (data.helper && data.helper.latitude != null && data.helper.longitude != null) {
+        const hl = [data.helper.latitude, data.helper.longitude]
+        if (!helperMarkerRef.current) {
+          helperMarkerRef.current = L.marker(hl).addTo(leafletMapRef.current).bindPopup('You')
+        } else {
+          helperMarkerRef.current.setLatLng(hl)
+        }
+        const d = haversineDistance(request.latitude, request.longitude, data.helper.latitude, data.helper.longitude)
+        setDistanceKm(d)
+      } else {
+        setDistanceKm(null)
+      }
+    } catch (e) {}
+  }
+
+  const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    function toRad(x: number) { return (x * Math.PI) / 180 }
+    const R = 6371 // km
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return Math.round(R * c * 10) / 10
   }
 
   if (!user || !request) {
@@ -144,10 +246,81 @@ export default function HelperRequestDetailPage() {
               {request.status === "pending" && (
                 <>
                   <Separator />
-                  <Button onClick={handleAcceptRequest} className="w-full">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Accept Request
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={handleAcceptRequest} className="flex-1">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Accept Request
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/requests/${params.id}/decline`, { method: "PUT" })
+                          if (res.ok) {
+                            toast({ title: "Request declined" })
+                            loadData()
+                          } else {
+                            const d = await res.json()
+                            toast({ variant: "destructive", title: "Failed", description: d.error })
+                          }
+                        } catch (e) {
+                          toast({ variant: "destructive", title: "Error", description: "Unable to decline" })
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Live Map */}
+              <Separator />
+              <div className="mb-4">
+                <h4 className="font-semibold mb-2">Live Map</h4>
+                <div className="text-sm mb-2">
+                  {distanceKm != null ? (
+                    <>Distance to user: <strong>{distanceKm} km</strong></>
+                  ) : (
+                    <span className="text-muted-foreground">Waiting for location...</span>
+                  )}
+                </div>
+                <div ref={mapRef} style={{ height: 300, width: "100%" }} />
+              </div>
+
+              {images && images.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="font-semibold mb-2">Images</h4>
+                    <div className="flex gap-2 flex-wrap">
+                      {images.map((img) => (
+                        <img key={img.id} src={img.file_path} alt={img.original_name} className="w-32 h-24 object-cover rounded" />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {ratings && ratings.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="font-semibold mb-2">Reviews</h4>
+                    <div className="space-y-3">
+                      {ratings.map((r) => (
+                        <div key={r.id} className="border rounded p-2">
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            <span className="font-medium">{r.stars} / 5</span>
+                          </div>
+                          {r.feedback && <p className="text-sm text-muted-foreground mt-1">{r.feedback}</p>}
+                          <div className="text-xs text-muted-foreground mt-1">By: {r.rater_name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
             </CardContent>

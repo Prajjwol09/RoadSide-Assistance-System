@@ -14,9 +14,15 @@ export async function GET(request: NextRequest) {
 
     let query = `
       SELECT 
-        h.*,
-        u.name,
-        u.email
+        h.id,
+        h.skills,
+        h.address,
+        h.latitude,
+        h.longitude,
+        h.is_available,
+        h.rating_average,
+        h.total_ratings,
+        u.name as name
       FROM helpers h
       JOIN users u ON h.user_id = u.id
     `

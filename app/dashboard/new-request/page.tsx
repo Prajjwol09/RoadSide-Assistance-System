@@ -5,7 +5,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,9 @@ export default function NewRequestPage() {
     latitude: "",
     longitude: "",
   })
+  const [files, setFiles] = useState<File[] | null>(null)
+  const [previews, setPreviews] = useState<string[]>([])
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [hasActiveRequest, setHasActiveRequest] = useState(false)
   const [activeRequest, setActiveRequest] = useState<any | null>(null)
@@ -89,6 +92,63 @@ export default function NewRequestPage() {
     }
   }
 
+  const handleFiles = (fileList: FileList | null) => {
+    if (!fileList) return
+    const arr = Array.from(fileList)
+    const allowed = arr.slice(0, 5)
+    const validFiles: File[] = []
+    const newPreviews: string[] = []
+
+    for (const f of allowed) {
+      if (f.size > 5 * 1024 * 1024) {
+        toast({ variant: "destructive", title: "File too large", description: `${f.name} exceeds 5MB and was skipped.` })
+        continue
+      }
+      validFiles.push(f)
+      newPreviews.push(URL.createObjectURL(f))
+    }
+
+    setFiles((prev) => {
+      const merged = [...(prev || []), ...validFiles].slice(0, 5)
+      return merged
+    })
+
+    setPreviews((prev) => {
+      const merged = [...prev, ...newPreviews].slice(0, 5)
+      return merged
+    })
+  }
+
+  const removePreview = (index: number) => {
+    setPreviews((prev) => {
+      const url = prev[index]
+      try {
+        URL.revokeObjectURL(url)
+      } catch (e) {}
+      const next = prev.slice()
+      next.splice(index, 1)
+      return next
+    })
+
+    setFiles((prev) => {
+      if (!prev) return prev
+      const next = prev.slice()
+      next.splice(index, 1)
+      return next
+    })
+  }
+
+  // Cleanup generated object URLs on unmount
+  useEffect(() => {
+    return () => {
+      previews.forEach((p) => {
+        try {
+          URL.revokeObjectURL(p)
+        } catch (e) {}
+      })
+    }
+  }, [previews])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (hasActiveRequest) {
@@ -116,15 +176,19 @@ export default function NewRequestPage() {
     }
 
     try {
+      const form = new FormData()
+      form.append("issue_description", formData.issue_description)
+      form.append("latitude", String(lat))
+      form.append("longitude", String(lng))
+      if (files && files.length > 0) {
+        // limit to 5 files
+        Array.from(files).slice(0, 5).forEach((f) => form.append("images", f))
+      }
+
       const response = await fetch("/api/requests/create", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          issue_description: formData.issue_description,
-          latitude: lat,
-          longitude: lng,
-        }),
+        body: form,
       })
 
       const data = await response.json()
@@ -197,7 +261,56 @@ export default function NewRequestPage() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="images">Images (optional)</Label>
+                  <div
+                    className="border-dashed border-2 border-border rounded-md p-4 flex flex-col items-center justify-center text-center bg-muted/30"
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      const dt = e.dataTransfer
+                      if (dt?.files) {
+                        handleFiles(dt.files)
+                      }
+                    }}
+                  >
+                    <p className="text-sm text-muted-foreground mb-2">Drag & drop images here, or</p>
+                    <input
+                      id="images"
+                      ref={inputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => handleFiles(e.target.files)}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => inputRef.current?.click()}
+                    >
+                      Choose Images
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">You may upload up to 5 images. Max 5MB per image.</p>
+                  </div>
 
+                  {previews.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                      {previews.map((src, idx) => (
+                        <div key={idx} className="relative rounded overflow-hidden border">
+                          <img src={src} alt={`preview-${idx}`} className="object-cover w-full h-24" />
+                          <button
+                            type="button"
+                            onClick={() => removePreview(idx)}
+                            className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md"
+                            aria-label="Remove image"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <Label>Location</Label>
                   <Button type="button" variant="outline" onClick={handleGetLocation} className="w-full bg-transparent">

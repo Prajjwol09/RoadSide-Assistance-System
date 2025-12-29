@@ -48,6 +48,30 @@ CREATE TABLE IF NOT EXISTS service_requests (
   FOREIGN KEY (helper_id) REFERENCES helpers(id) ON DELETE SET NULL
 );
 
+-- Service Request Images: store uploaded images for a request
+CREATE TABLE IF NOT EXISTS service_request_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_request_id INTEGER NOT NULL,
+  file_path TEXT NOT NULL, -- relative path under /public
+  original_name TEXT,
+  content_type TEXT,
+  size INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (service_request_id) REFERENCES service_requests(id) ON DELETE CASCADE
+);
+
+-- Track helper responses (accept/decline) per service request
+CREATE TABLE IF NOT EXISTS service_request_helper_responses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_request_id INTEGER NOT NULL,
+  helper_id INTEGER NOT NULL,
+  response TEXT NOT NULL, -- 'accepted' or 'declined'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (service_request_id) REFERENCES service_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (helper_id) REFERENCES helpers(id) ON DELETE CASCADE,
+  UNIQUE(service_request_id, helper_id)
+);
+
 -- Ratings table: Stores mutual ratings between users and helpers
 -- Each service request can have up to 2 ratings (user->helper and helper->user)
 CREATE TABLE IF NOT EXISTS ratings (

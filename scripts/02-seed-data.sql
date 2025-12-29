@@ -3,14 +3,14 @@
 
 -- Insert sample users (password is "password123" - should be hashed in production)
 INSERT INTO users (email, phone, password, name, role) VALUES
-  ('john.doe@email.com', '1234567890', 'password123', 'John Doe', 'user'),
-  ('jane.smith@email.com', '1234567891', 'password123', 'Jane Smith', 'helper'),
-  ('mike.wilson@email.com', '1234567892', 'password123', 'Mike Wilson', 'helper'),
-  ('sarah.johnson@email.com', '1234567893', 'password123', 'Sarah Johnson', 'user'),
+  ('john.doe@gmail.com', '1234567890', 'password123', 'John Doe', 'user'),
+  ('jane.smith@gmail.com', '1234567891', 'password123', 'Jane Smith', 'helper'),
+  ('mike.wilson@gmail.com', '1234567892', 'password123', 'Mike Wilson', 'helper'),
+  ('sarah.johnson@gmail.com', '1234567893', 'password123', 'Sarah Johnson', 'user'),
   ('admin@roadside.com', '1234567894', 'admin123', 'System Admin', 'admin'),
-  ('tom.brown@email.com', '1234567895', 'password123', 'Tom Brown', 'helper'),
-  ('lisa.davis@email.com', '1234567896', 'password123', 'Lisa Davis', 'user'),
-  ('robert.lee@email.com', '1234567897', 'password123', 'Robert Lee', 'helper');
+  ('tom.brown@gmail.com', '1234567895', 'password123', 'Tom Brown', 'helper'),
+  ('lisa.davis@gmail.com', '1234567896', 'password123', 'Lisa Davis', 'user'),
+  ('robert.lee@gmail.com', '1234567897', 'password123', 'Robert Lee', 'helper');
 
 -- Insert sample helpers (linked to users with role 'helper')
 INSERT INTO helpers (user_id, skills, address, latitude, longitude, is_available, rating_average, total_ratings) VALUES

@@ -3,7 +3,9 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
+import L from "leaflet"
+import "leaflet/dist/leaflet.css"
 import { useRouter, useParams } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -43,6 +45,11 @@ export default function RequestDetailPage() {
   const [request, setRequest] = useState<Request | null>(null)
   const [helpers, setHelpers] = useState<Helper[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const mapRef = useRef<HTMLDivElement | null>(null)
+  const leafletMapRef = useRef<any>(null)
+  const userMarkerRef = useRef<any>(null)
+  const helperMarkerRef = useRef<any>(null)
+  const [distanceKm, setDistanceKm] = useState<number | null>(null)
 
   useEffect(() => {
     // Check authentication
@@ -65,16 +72,24 @@ export default function RequestDetailPage() {
       const requestRes = await fetch(`/api/requests/${params.id}`)
       const requestData = await requestRes.json()
       if (requestRes.ok) {
-        setRequest(requestData.request)
+        // Support new response shape where helper information is nested
+        const req = requestData.request
+        if (req && req.helper && !req.helper_name) {
+          req.helper_name = req.helper.name
+          req.helper_id = req.helper.id
+        }
+        setRequest(req)
 
-        // Load available helpers if request is still open
-        if (requestData.request.status === "requested") {
+        // Load available helpers if request is still open (treat 'declined' as reopen)
+        if (req.status === "requested" || req.status === "declined") {
           const helpersRes = await fetch("/api/helpers/list")
           const helpersData = await helpersRes.json()
           if (helpersRes.ok) {
             setHelpers(helpersData.helpers)
           }
         }
+        // initialize map once request is loaded
+        setTimeout(() => initMap(), 100)
       }
     } catch (error) {
       toast({
@@ -85,6 +100,66 @@ export default function RequestDetailPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const initMap = () => {
+    if (!mapRef.current || !request) return
+    if (leafletMapRef.current) return
+
+    const userLat = request.latitude
+    const userLng = request.longitude
+
+    const map = L.map(mapRef.current).setView([userLat, userLng], 13)
+    leafletMapRef.current = map
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap",
+    }).addTo(map)
+
+    userMarkerRef.current = L.marker([userLat, userLng]).addTo(map).bindPopup("User location")
+
+    fetchLocationsAndUpdateMarkers()
+
+    setInterval(() => {
+      fetchLocationsAndUpdateMarkers()
+    }, 5000)
+  }
+
+  const fetchLocationsAndUpdateMarkers = async () => {
+    if (!request) return
+    try {
+      const res = await fetch(`/api/requests/${request.id}/locations`, { credentials: "include" })
+      const data = await res.json()
+      if (!res.ok) return
+
+      if (data.helper && data.helper.latitude != null && data.helper.longitude != null) {
+        const hl = [data.helper.latitude, data.helper.longitude]
+        if (!helperMarkerRef.current) {
+          helperMarkerRef.current = L.marker(hl).addTo(leafletMapRef.current).bindPopup('Helper')
+        } else {
+          helperMarkerRef.current.setLatLng(hl)
+        }
+
+        // compute distance
+        const d = haversineDistance(request.latitude, request.longitude, data.helper.latitude, data.helper.longitude)
+        setDistanceKm(d)
+      } else {
+        setDistanceKm(null)
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    function toRad(x: number) { return (x * Math.PI) / 180 }
+    const R = 6371 // km
+    const dLat = toRad(lat2 - lat1)
+    const dLon = toRad(lon2 - lon1)
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    return Math.round(R * c * 10) / 10
   }
 
   const handleSelectHelper = async (helperId: number) => {
@@ -225,6 +300,11 @@ export default function RequestDetailPage() {
                   </div>
                 </>
               )}
+              {request.helper && request.helper.phone && (
+                <div className="pt-2 text-sm">
+                  <strong>Phone:</strong> {request.helper.phone}
+                </div>
+              )}
               {request.status === "accepted" && (
                 <Button onClick={handleCompleteRequest} className="w-full">
                   <CheckCircle className="mr-2 h-4 w-4" />
@@ -238,6 +318,24 @@ export default function RequestDetailPage() {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Live Map */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Map</CardTitle>
+              <CardDescription>Track helper and user locations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-2">
+                {distanceKm != null ? (
+                  <div className="text-sm">Distance between you and helper: <strong>{distanceKm} km</strong></div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Helper location not available yet</div>
+                )}
+              </div>
+              <div ref={mapRef} id="map" style={{ height: 300, width: "100%" }} />
             </CardContent>
           </Card>
 

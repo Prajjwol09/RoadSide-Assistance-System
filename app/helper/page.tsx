@@ -38,6 +38,7 @@ export default function HelperDashboard() {
   const { toast } = useToast()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<HelperProfile | null>(null)
+  const [ratings, setRatings] = useState<any[]>([])
   const [requests, setRequests] = useState<ServiceRequest[]>([])
   const [myRequests, setMyRequests] = useState<ServiceRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -64,6 +65,7 @@ export default function HelperDashboard() {
       const profileData = await profileRes.json()
       if (profileRes.ok) {
         setProfile(profileData.profile)
+        setRatings(profileData.ratings || [])
       }
 
       // Load available requests
@@ -153,6 +155,23 @@ export default function HelperDashboard() {
               <Label className="text-sm font-medium">Service Area</Label>
               <p className="text-sm text-muted-foreground">{profile.address}</p>
             </div>
+            {ratings && ratings.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Recent Reviews</Label>
+                <div className="space-y-2 mt-2">
+                  {ratings.map((r) => (
+                    <div key={r.id} className="border rounded p-2">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <span className="font-medium">{r.stars} / 5</span>
+                      </div>
+                      {r.feedback && <p className="text-sm text-muted-foreground mt-1">{r.feedback}</p>}
+                      <div className="text-xs text-muted-foreground mt-1">By: {r.rater_name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-4 border-t">
               <div className="space-y-0.5">
                 <Label htmlFor="availability">Availability Status</Label>
