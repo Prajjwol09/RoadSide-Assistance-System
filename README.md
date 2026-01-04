@@ -1,4 +1,4 @@
-# Roadside Assistance System
+# Road Sathi (RS)
 
 A complete full-stack roadside assistance platform built with Next.js, TypeScript, and SQLite.
 

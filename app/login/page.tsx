@@ -76,7 +76,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold">Roadside Assistance</CardTitle>
+          <CardTitle className="text-3xl font-bold">Road Sathi</CardTitle>
           <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
@@ -108,6 +108,13 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
+
+            <div className="text-center">
+              <Link href="/forgot-password" className="text-sm text-primary underline-offset-4 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
               <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">

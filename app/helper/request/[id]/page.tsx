@@ -24,6 +24,10 @@ interface Request {
   longitude: number
   status: string
   created_at: string
+  helper?: {
+    id: number
+    name?: string
+  }
 }
 
 export default function HelperRequestDetailPage() {
@@ -114,6 +118,25 @@ export default function HelperRequestDetailPage() {
         title: "Error",
         description: "An unexpected error occurred",
       })
+    }
+  }
+
+  const handleMarkCompleted = async () => {
+    if (!confirm('Mark this request as completed?')) return
+    try {
+      const response = await fetch(`/api/requests/${params.id}/complete`, {
+        method: 'PUT',
+      })
+
+      if (response.ok) {
+        toast({ title: 'Request marked completed' })
+        loadData()
+      } else {
+        const data = await response.json()
+        toast({ variant: 'destructive', title: 'Failed', description: data.error })
+      }
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Unable to complete request' })
     }
   }
 
@@ -270,6 +293,18 @@ export default function HelperRequestDetailPage() {
                       className="flex-1"
                     >
                       Decline
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {request.status === "accepted" && user?.role === "helper" && request.helper?.id === user.id && (
+                <>
+                  <Separator />
+                  <div className="flex gap-2">
+                    <Button onClick={handleMarkCompleted} className="flex-1">
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Mark as Completed
                     </Button>
                   </div>
                 </>

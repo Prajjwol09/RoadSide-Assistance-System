@@ -92,6 +92,8 @@ export default function HelperDashboard() {
     }
   }
 
+  const latestReview = ratings && ratings.length > 0 ? ratings[0] : null
+
   const toggleAvailability = async (isAvailable: boolean) => {
     try {
       const response = await fetch("/api/helpers/availability", {
@@ -155,20 +157,18 @@ export default function HelperDashboard() {
               <Label className="text-sm font-medium">Service Area</Label>
               <p className="text-sm text-muted-foreground">{profile.address}</p>
             </div>
-            {ratings && ratings.length > 0 && (
+            {latestReview && (
               <div>
-                <Label className="text-sm font-medium">Recent Reviews</Label>
-                <div className="space-y-2 mt-2">
-                  {ratings.map((r) => (
-                    <div key={r.id} className="border rounded p-2">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="font-medium">{r.stars} / 5</span>
-                      </div>
-                      {r.feedback && <p className="text-sm text-muted-foreground mt-1">{r.feedback}</p>}
-                      <div className="text-xs text-muted-foreground mt-1">By: {r.rater_name}</div>
+                <Label className="text-sm font-medium">Recent Review</Label>
+                <div className="mt-2">
+                  <div key={latestReview.id} className="border rounded p-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-yellow-500" />
+                      <span className="font-medium">{latestReview.stars} / 5</span>
                     </div>
-                  ))}
+                    {latestReview.feedback && <p className="text-sm text-muted-foreground mt-1">{latestReview.feedback}</p>}
+                    <div className="text-xs text-muted-foreground mt-1">By: {latestReview.rater_name}</div>
+                  </div>
                 </div>
               </div>
             )}

@@ -9,11 +9,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const session = await requireAuth()
     const { id } = await params
 
-    // Verify the request belongs to the user
-    const serviceRequest = db.prepare("SELECT * FROM service_requests WHERE id = ? AND user_id = ?").get(id, session.id)
+    // Fetch the service request
+    const serviceRequest = db.prepare("SELECT * FROM service_requests WHERE id = ?").get(id)
 
     if (!serviceRequest) {
-      return NextResponse.json({ error: "Request not found or access denied" }, { status: 404 })
+      return NextResponse.json({ error: "Request not found" }, { status: 404 })
+    }
+
+    // Allow the request owner (user) OR the assigned helper OR admin to mark completed
+    const isOwner = serviceRequest.user_id === session.id && session.role === "user"
+    let isHelper = false
+    if (session.role === "helper") {
+      // `service_requests.helper_id` references the `helpers.id` (not users.id).
+      // Map current session user -> helpers record to check ownership.
+      const helperRecord = db.prepare("SELECT id FROM helpers WHERE user_id = ?").get(session.id) as any
+      if (helperRecord && helperRecord.id === serviceRequest.helper_id) {
+        isHelper = true
+      }
+    }
+    const isAdmin = session.role === "admin"
+
+    if (!isOwner && !isHelper && !isAdmin) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
     // Update request status to completed
