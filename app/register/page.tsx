@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { RoadSathiLogo } from "@/components/logo"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -109,158 +110,203 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold">Create Account</CardTitle>
-          <CardDescription>Register as a user or helper</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleRegister}>
-          <CardContent className="space-y-6">
-            {/* Role Selection */}
-            <div className="space-y-3">
-              <Label>I want to register as:</Label>
-              <RadioGroup value={role} onValueChange={(value: any) => setRole(value)}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="user" id="user" />
-                  <Label htmlFor="user" className="cursor-pointer font-normal">
-                    User (Request roadside assistance)
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="helper" id="helper" />
-                  <Label htmlFor="helper" className="cursor-pointer font-normal">
-                    Helper (Provide roadside assistance)
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl">
+        {/* Logo/Brand Section */}
+        <div className="text-center mb-8">
+          <div className="mb-6">
+            <RoadSathiLogo size="lg" showText={true} />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-2">
+            Create Your Account
+          </h1>
+          <p className="text-slate-600">Join our community of users and helpers</p>
+        </div>
 
-            {/* Basic Information */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
+        {/* Registration Form */}
+        <Card className="bg-white/70 backdrop-blur-sm border-white/30 rounded-3xl shadow-2xl">
+          <form onSubmit={handleRegister}>
+            <CardContent className="p-8 space-y-8">
+              {/* Role Selection */}
+              <div className="space-y-4">
+                <Label className="text-slate-700 font-semibold text-lg">I want to register as:</Label>
+                <RadioGroup value={role} onValueChange={(value: any) => setRole(value)} className="flex gap-6">
+                  <div className="flex items-center space-x-3 p-4 bg-slate-50/50 rounded-2xl border border-white/30 hover:bg-white/60 transition-all duration-300 cursor-pointer">
+                    <RadioGroupItem value="user" id="user" />
+                    <div>
+                      <Label htmlFor="user" className="cursor-pointer font-semibold text-slate-800">
+                        User
+                      </Label>
+                      <p className="text-sm text-slate-600">Request roadside assistance</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 bg-slate-50/50 rounded-2xl border border-white/30 hover:bg-white/60 transition-all duration-300 cursor-pointer">
+                    <RadioGroupItem value="helper" id="helper" />
+                    <div>
+                      <Label htmlFor="helper" className="cursor-pointer font-semibold text-slate-800">
+                        Helper
+                      </Label>
+                      <p className="text-sm text-slate-600">Provide roadside assistance</p>
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="1234567890"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john.doe@email.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="Confirm password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Helper-specific fields */}
-            {role === "helper" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="skills">Skills & Services</Label>
-                  <Textarea
-                    id="skills"
-                    placeholder="e.g., Tire Change, Battery Jump, Towing, Fuel Delivery"
-                    value={helperData.skills}
-                    onChange={(e) => setHelperData({ ...helperData, skills: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Textarea
-                    id="address"
-                    placeholder="Your service area address"
-                    value={helperData.address}
-                    onChange={(e) => setHelperData({ ...helperData, address: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="latitude">Latitude (Optional)</Label>
+              {/* Basic Information */}
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-2">Basic Information</h3>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label htmlFor="name" className="text-slate-700 font-medium">Full Name</Label>
                     <Input
-                      id="latitude"
-                      type="number"
-                      step="any"
-                      placeholder="40.7128"
-                      value={helperData.latitude}
-                      onChange={(e) => setHelperData({ ...helperData, latitude: e.target.value })}
+                      id="name"
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="longitude">Longitude (Optional)</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
                     <Input
-                      id="longitude"
-                      type="number"
-                      step="any"
-                      placeholder="-74.0060"
-                      value={helperData.longitude}
-                      onChange={(e) => setHelperData({ ...helperData, longitude: e.target.value })}
+                      id="email"
+                      type="email"
+                      placeholder="john.doe@email.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
                     />
                   </div>
                 </div>
-              </>
-            )}
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create Account"}
-            </Button>
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
-                Sign in here
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label htmlFor="phone" className="text-slate-700 font-medium">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                    />
+                  </div>
+                  <div></div>
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Create a strong password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">Confirm Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Helper-specific fields */}
+              {role === "helper" && (
+                <div className="space-y-6">
+                  <h3 className="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-2">Helper Information</h3>
+                  <div className="space-y-3">
+                    <Label htmlFor="skills" className="text-slate-700 font-medium">Skills & Services</Label>
+                    <Textarea
+                      id="skills"
+                      placeholder="e.g., Tire Change, Battery Jump, Towing, Fuel Delivery"
+                      value={helperData.skills}
+                      onChange={(e) => setHelperData({ ...helperData, skills: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300 min-h-24"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="address" className="text-slate-700 font-medium">Service Area Address</Label>
+                    <Textarea
+                      id="address"
+                      placeholder="Your service area address"
+                      value={helperData.address}
+                      onChange={(e) => setHelperData({ ...helperData, address: e.target.value })}
+                      required
+                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300 min-h-20"
+                    />
+                  </div>
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <Label htmlFor="latitude" className="text-slate-700 font-medium">Latitude (Optional)</Label>
+                      <Input
+                        id="latitude"
+                        type="number"
+                        step="any"
+                        placeholder="40.7128"
+                        value={helperData.latitude}
+                        onChange={(e) => setHelperData({ ...helperData, latitude: e.target.value })}
+                        className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="longitude" className="text-slate-700 font-medium">Longitude (Optional)</Label>
+                      <Input
+                        id="longitude"
+                        type="number"
+                        step="any"
+                        placeholder="-74.0060"
+                        value={helperData.longitude}
+                        onChange={(e) => setHelperData({ ...helperData, longitude: e.target.value })}
+                        className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Creating account...
+                  </div>
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+            </CardContent>
+            <CardFooter className="px-8 pb-8">
+              <p className="text-center text-slate-600 text-sm w-full">
+                Already have an account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200 underline-offset-4 hover:underline"
+                >
+                  Sign in here
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   )
 }
