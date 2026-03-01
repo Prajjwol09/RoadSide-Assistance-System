@@ -20,6 +20,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
 
+    // ensure phone starts with a single plus sign; clients supply full code
+    if (!phone.startsWith("+")) {
+      phone = "+" + phone
+    }
+    // if user somehow included multiple pluses, collapse them to single
+    phone = phone.replace(/^\++/, "+")
+
+    // Basic format check: plus followed by digits only
+    if (!/^\+\d+$/.test(phone)) {
+      return NextResponse.json({ error: "Phone number must include country code and digits" }, { status: 400 })
+    }
+
+    // server-side password strength check
+    const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    if (!pwdRegex.test(password)) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long and include uppercase, lowercase, and a number" },
+        { status: 400 },
+      )
+    }
+
     // Check if user already exists (compare normalized phone to avoid formatting collisions)
     const existingUser = db
       .prepare("SELECT id FROM users WHERE email = ? OR replace(phone, ' ', '') = ?")
@@ -42,8 +63,18 @@ export async function POST(request: NextRequest) {
       )
     } catch (err: any) {
       console.error('User insert error:', err)
-      // Handle unique constraint errors gracefully
+      // Handle common SQLite errors gracefully
       const message = err?.message || ''
+
+      if (/no such table/i.test(message)) {
+        // This should be rare now that db.ts auto-initializes the schema,
+        // but provide a clearer message in case something went wrong.
+        return NextResponse.json(
+          { error: 'Database not initialized (missing users table). Run `npm run db:init` or restart server.' },
+          { status: 500 },
+        )
+      }
+
       if (/UNIQUE constraint failed/i.test(message) || err?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         return NextResponse.json({ error: 'User with this email or phone already exists' }, { status: 409 })
       }

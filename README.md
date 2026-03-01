@@ -56,6 +56,30 @@ This will:
 - Create all tables with proper relationships
 - Seed sample data for testing
 
+> ⚠️ **Important:** if you start the dev server without running this script
+> you may encounter `SqliteError: no such table: users`. The code now includes
+> an automatic check on startup and will attempt to create the schema/seed data
+> when needed, but it’s still a good idea to run the command manually while
+> developing or when resetting the database.
+
+### 4. Registration form enhancements
+
+The registration page now includes several user-friendly features:
+
+- **Country code dropdown** – users can select an international dialing prefix from a list (Nepal +977 is selected by default, with options like +1, +91, +44, +61, etc.). The chosen code is prepended to the phone number when the form is submitted.
+- **Live password validation** – as the user types their password the form shows which requirements are satisfied (uppercase, lowercase, digit, minimum length).
+- **Visibility toggles** – eye icons allow the user to show/hide both password fields for easier entry.
+
+These enhancements are purely client-side; the server accepts any `+`‑prefixed number and enforces the same password rules for security.
+
+### 4. Registration fields updates
+
+The registration form now features:
+
+- A **country code dropdown** that lets users pick from multiple international prefixes (Nepal +977 is the default but others such as +1, +91, +44, +61 are included). The selected code is prepended to the local number before sending.
+- Interactive **password strength feedback** that highlights requirements (uppercase, lowercase, number, length) as the user types.
+- Eye icons to toggle visibility of both password fields.
+
 ### 4. Start Development Server
 
 ```bash
@@ -141,7 +165,9 @@ roadside-assistance/
 
 ### Authentication
 - `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/register` - User registration (phone number must include Nepal country code +977; client auto‑prefixes)
+  > **Note**: registration enforces a password policy (min 8 chars, uppercase, lowercase, number) and prepends
+  > Nepal country code **+977** to the phone field automatically.
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/me` - Get current user
 

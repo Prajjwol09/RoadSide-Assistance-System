@@ -5,7 +5,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,20 +14,25 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { RoadSathiLogo } from "@/components/logo"
+import { Check, Eye, EyeOff } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [role, setRole] = useState<"user" | "helper">("user")
+  const [countryCode, setCountryCode] = useState("+977")
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
+    phone: "", // user will enter local number only
     password: "",
     confirmPassword: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [helperData, setHelperData] = useState({
     skills: "",
     address: "",
@@ -35,6 +40,25 @@ export default function RegisterPage() {
     longitude: "",
   })
   const [isLoading, setIsLoading] = useState(false)
+
+  // Password requirement flags (recomputed on each render)
+  const pwd = formData.password
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasLower = /[a-z]/.test(pwd)
+  const hasNumber = /\d/.test(pwd)
+  const hasLength = pwd.length >= 8
+
+  const countryOptions = useMemo(
+    () => [
+      { code: "+977", label: "Nepal" },
+      { code: "+1", label: "USA" },
+      { code: "+91", label: "India" },
+      { code: "+44", label: "UK" },
+      { code: "+61", label: "Australia" },
+      // add more codes as needed
+    ],
+    [],
+  )
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,12 +75,31 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate password strength (min 8 chars, uppercase, lowercase, digit)
+    const pwd = formData.password
+    const pwdRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    if (!pwdRegex.test(pwd)) {
+      toast({
+        variant: "destructive",
+        title: "Weak password",
+        description: "Password must be at least 8 characters and include uppercase, lowercase and a number",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
       // Normalize phone (remove spaces) and trim email before sending
+      let normalizedPhone = formData.phone ? formData.phone.replace(/\s+/g, "") : formData.phone
+      // strip any leading "+" the user may have typed with code
+      if (normalizedPhone && normalizedPhone.startsWith("+")) {
+        normalizedPhone = normalizedPhone.replace(/^\+/, "")
+      }
+      const fullPhone = normalizedPhone ? `${countryCode}${normalizedPhone}` : normalizedPhone
       const payload = {
         ...formData,
         email: formData.email.trim().toLowerCase(),
-        phone: formData.phone ? formData.phone.replace(/\s+/g, "") : formData.phone,
+        phone: fullPhone,
       }
 
       const response = await fetch("/api/auth/register", {
@@ -183,42 +226,94 @@ export default function RegisterPage() {
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-3">
                     <Label htmlFor="phone" className="text-slate-700 font-medium">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      placeholder="+1 (555) 123-4567"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={countryCode}
+                        onValueChange={(val) => setCountryCode(val)}
+                        className="w-32"
+                      >
+                        <SelectTrigger size="sm">
+                          <SelectValue placeholder="Code" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {countryOptions.map((opt) => (
+                            <SelectItem key={opt.code} value={opt.code}>
+                              {opt.label} ({opt.code})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="9812345678"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        required
+                        className="flex-1 bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-500">Country code is selected on the left.</p>
                   </div>
                   <div></div>
                 </div>
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div className="space-y-3">
                     <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Create a strong password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Create a strong password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        required
+                        className="bg-white/50 border-white/30 rounded-2xl pr-10 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                      >
+                        {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
+                    <ul className="text-xs mt-1 space-y-1">
+                      <li className={hasUpper ? "text-green-600" : "text-red-600"}>
+                        <Check className="inline-block mr-1 size-4" />Uppercase letter
+                      </li>
+                      <li className={hasLower ? "text-green-600" : "text-red-600"}>
+                        <Check className="inline-block mr-1 size-4" />Lowercase letter
+                      </li>
+                      <li className={hasNumber ? "text-green-600" : "text-red-600"}>
+                        <Check className="inline-block mr-1 size-4" />Number
+                      </li>
+                      <li className={hasLength ? "text-green-600" : "text-red-600"}>
+                        <Check className="inline-block mr-1 size-4" />8+ characters
+                      </li>
+                    </ul>
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">Confirm Password</Label>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      placeholder="Confirm your password"
-                      value={formData.confirmPassword}
-                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                      required
-                      className="bg-white/50 border-white/30 rounded-2xl focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm your password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        required
+                        className="bg-white/50 border-white/30 rounded-2xl pr-10 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all duration-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500"
+                      >
+                        {showConfirmPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
