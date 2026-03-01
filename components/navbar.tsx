@@ -3,11 +3,12 @@
 
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { LogOut, User as UserIcon, Wrench as ToolIcon, ChevronDown, Star } from "lucide-react"
+import { LogOut, User as UserIcon, Wrench as ToolIcon, ChevronDown, Star, ChevronLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { RoadSathiLogo } from "@/components/logo"
 
@@ -50,8 +51,21 @@ export function Navbar({ user }: NavbarProps) {
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-white/20 shadow-lg">
       <div className="container flex h-20 items-center justify-between px-6">
-        {/* Brand Section */}
-        <RoadSathiLogo size="md" showText={true} />
+        <div className="flex items-center gap-3">
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()}
+            className="p-2 hover:bg-white/60 rounded-xl transition-colors duration-200 flex items-center justify-center"
+            title="Go back"
+          >
+            <ChevronLeft className="h-5 w-5 text-slate-700" />
+          </button>
+
+          {/* Brand Section - Clickable to go home */}
+          <Link href="/" className="hover:opacity-80 transition-opacity duration-200">
+            <RoadSathiLogo size="md" showText={true} />
+          </Link>
+        </div>
 
         {/* User Profile & Actions */}
         <div className="flex items-center gap-4">

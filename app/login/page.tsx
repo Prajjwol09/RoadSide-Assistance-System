@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { RoadSathiLogo } from "@/components/logo"
+import { ChevronLeft } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -76,10 +77,23 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl hover:bg-white/80 transition-all duration-300 shadow-sm hover:shadow-md text-slate-700 font-medium"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
+
         {/* Logo/Brand Section */}
         <div className="text-center mb-8">
           <div className="mb-6">
-            <RoadSathiLogo size="lg" showText={true} />
+            <Link href="/" className="inline-block hover:opacity-80 transition-opacity duration-200">
+              <RoadSathiLogo size="lg" showText={true} />
+            </Link>
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-2">
             Welcome Back

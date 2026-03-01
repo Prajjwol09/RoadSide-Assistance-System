@@ -72,6 +72,16 @@ The registration page now includes several user-friendly features:
 
 These enhancements are purely client-side; the server accepts any `+`‑prefixed number and enforces the same password rules for security.
 
+### 5. Navigation & home page access
+
+Users can now easily return to the home page from anywhere in the application:
+
+- **Logo click** – the RoadSathi logo is clickable on all pages (login, register, forgot-password, reset-password, and all authenticated dashboards). Clicking it redirects to `/`, which automatically handles role-based redirection:
+  - Authenticated users → their role dashboard (`/dashboard`, `/helper`, or `/admin`)
+  - Unauthenticated users → `/login`
+- **Consistent styling** – all authentication pages now use the same gradient background and card styling for a cohesive user experience.
+
+
 ### 4. Registration fields updates
 
 The registration form now features:
