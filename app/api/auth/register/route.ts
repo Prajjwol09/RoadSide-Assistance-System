@@ -2,6 +2,7 @@
 // Handles new user registration for both users and helpers
 
 import { type NextRequest, NextResponse } from "next/server"
+import bcrypt from "bcryptjs"
 import db from "@/lib/db"
 import { createSession } from "@/lib/auth"
 import { config } from "@/lib/config"
@@ -51,13 +52,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert new user
-    // In production, hash the password using bcrypt or similar
+    // Hash the password using bcrypt
+    const saltRounds = 12
+    const hashedPassword = await bcrypt.hash(password, saltRounds)
+
     let result
     try {
       result = db.prepare("INSERT INTO users (email, phone, password, name, role) VALUES (?, ?, ?, ?, ?)").run(
         email,
         phone,
-        password,
+        hashedPassword,
         name,
         role,
       )
