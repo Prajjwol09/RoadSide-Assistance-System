@@ -3,6 +3,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
+import { notificationService } from "@/lib/notifications"
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,6 +24,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Mark request as cancelled
     db.prepare("UPDATE service_requests SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id)
+
+    // Send notification to the user
+    await notificationService.notifyRequestCancelled(serviceRequest.user_id, parseInt(id))
 
     // If a helper was assigned, restore their availability
     if (serviceRequest.helper_id) {

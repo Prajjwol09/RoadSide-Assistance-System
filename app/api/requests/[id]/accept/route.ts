@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
+import { notificationService } from "@/lib/notifications"
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -41,6 +42,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     // Update request status to accepted
     db.prepare("UPDATE service_requests SET status = 'accepted', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(id)
+
+    // Send notification to the user
+    const helperUser = db.prepare("SELECT name FROM users WHERE id = ?").get(session.id) as any
+    await notificationService.notifyRequestAccepted(serviceRequest.user_id, parseInt(id), helperUser.name)
 
     // Record helper acceptance
     try {

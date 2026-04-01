@@ -11,9 +11,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { LogOut, User as UserIcon, Wrench as ToolIcon, ChevronDown, Star, ChevronLeft } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { RoadSathiLogo } from "@/components/logo"
+import { Notifications } from "@/components/notifications"
 
 interface NavbarProps {
   user: {
+    id: number
     name: string
     email: string
     role: string
@@ -69,6 +71,9 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* User Profile & Actions */}
         <div className="flex items-center gap-4">
+          {/* Notifications */}
+          <Notifications userId={user.id} />
+
           {/* User Info Card */}
           <div className="hidden lg:flex items-center gap-3 p-3 bg-slate-50/50 rounded-2xl border border-white/30 backdrop-blur-sm">
             <Avatar className="h-10 w-10 ring-2 ring-blue-100">

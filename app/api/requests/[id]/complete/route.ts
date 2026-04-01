@@ -3,6 +3,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import db from "@/lib/db"
 import { requireAuth } from "@/lib/auth"
+import { notificationService } from "@/lib/notifications"
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -37,6 +38,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     db.prepare(
       "UPDATE service_requests SET status = 'completed', completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
     ).run(id)
+
+    // Send notification to the user
+    if (serviceRequest.helper_id) {
+      const helper = db.prepare("SELECT user_id FROM helpers WHERE id = ?").get(serviceRequest.helper_id) as any
+      if (helper) {
+        const helperUser = db.prepare("SELECT name FROM users WHERE id = ?").get(helper.user_id) as any
+        await notificationService.notifyServiceCompleted(serviceRequest.user_id, parseInt(id), helperUser.name)
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

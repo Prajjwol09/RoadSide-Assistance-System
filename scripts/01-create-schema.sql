@@ -88,6 +88,18 @@ CREATE TABLE IF NOT EXISTS ratings (
   UNIQUE(service_request_id, rater_id, rated_id) -- Prevent duplicate ratings
 );
 
+-- Notifications table: Stores notifications for users
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  type TEXT NOT NULL, -- e.g., 'request_accepted', 'helper_on_way', 'service_completed', 'request_cancelled'
+  message TEXT NOT NULL,
+  read INTEGER DEFAULT 0, -- 0 = unread, 1 = read
+  data TEXT, -- JSON string for additional data like request_id
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
@@ -96,3 +108,5 @@ CREATE INDEX IF NOT EXISTS idx_service_requests_user ON service_requests(user_id
 CREATE INDEX IF NOT EXISTS idx_service_requests_helper ON service_requests(helper_id);
 CREATE INDEX IF NOT EXISTS idx_service_requests_status ON service_requests(status);
 CREATE INDEX IF NOT EXISTS idx_ratings_service_request ON ratings(service_request_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
