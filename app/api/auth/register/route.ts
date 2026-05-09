@@ -43,9 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists (compare normalized phone to avoid formatting collisions)
+    const normalizedPhone = phone.replace(/[\s+]/g, '')
     const existingUser = db
-      .prepare("SELECT id FROM users WHERE email = ? OR replace(phone, ' ', '') = ?")
-      .get(email, phone)
+      .prepare("SELECT id FROM users WHERE email = ? OR replace(replace(phone, ' ', ''), '+', '') = ?")
+      .get(email, normalizedPhone)
 
     if (existingUser) {
       return NextResponse.json({ error: "User with this email or phone already exists" }, { status: 409 })

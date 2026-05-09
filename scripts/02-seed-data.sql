@@ -4,14 +4,14 @@
 -- Insert sample users (password is "password123" - hashed in production)
 -- Note: These passwords are hashed using bcrypt with salt rounds 12
 INSERT INTO users (email, phone, password, name, role) VALUES
-  ('john.doe@gmail.com', '1234567890', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'John Doe', 'user'),
-  ('jane.smith@gmail.com', '1234567891', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Jane Smith', 'helper'),
-  ('mike.wilson@gmail.com', '1234567892', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Mike Wilson', 'helper'),
-  ('sarah.johnson@gmail.com', '1234567893', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Sarah Johnson', 'user'),
-  ('admin@roadside.com', '1234567894', '$2b$12$LxdnOEsQFlYWE6yZnak/IOS1fywzdrkccnNr7XL5xabii7x73qhve', 'System Admin', 'admin'),
-  ('tom.brown@gmail.com', '1234567895', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Tom Brown', 'helper'),
-  ('lisa.davis@gmail.com', '1234567896', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Lisa Davis', 'user'),
-  ('robert.lee@gmail.com', '1234567897', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Robert Lee', 'helper');
+  ('dev-john.doe@gmail.com', '+1234567890', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'John Doe', 'user'),
+  ('dev-jane.smith@gmail.com', '+1234567891', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Jane Smith', 'helper'),
+  ('dev-mike.wilson@gmail.com', '+1234567892', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Mike Wilson', 'helper'),
+  ('dev-sarah.johnson@gmail.com', '+1234567893', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Sarah Johnson', 'user'),
+  ('dev-admin@roadside.com', '+1234567894', '$2b$12$LxdnOEsQFlYWE6yZnak/IOS1fywzdrkccnNr7XL5xabii7x73qhve', 'System Admin', 'admin'),
+  ('dev-tom.brown@gmail.com', '+1234567895', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Tom Brown', 'helper'),
+  ('dev-lisa.davis@gmail.com', '+1234567896', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Lisa Davis', 'user'),
+  ('dev-robert.lee@gmail.com', '+1234567897', '$2b$12$iitDfEFSLwh3s1WBUAnq2ep.9kB2vMrsiZYs.PELZYMGYQjH1fYqu', 'Robert Lee', 'helper');
 
 -- Insert sample helpers (linked to users with role 'helper')
 INSERT INTO helpers (user_id, skills, address, latitude, longitude, is_available, rating_average, total_ratings) VALUES
